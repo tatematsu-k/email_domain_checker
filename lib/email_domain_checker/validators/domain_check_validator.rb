@@ -47,4 +47,8 @@ if defined?(::ActiveModel::EachValidator)
       end
     end
   end
+
+  unless ::ActiveModel::Validations.const_defined?(:DomainCheckValidator)
+    ::ActiveModel::Validations.const_set(:DomainCheckValidator, EmailDomainChecker::Validators::DomainCheckValidator)
+  end
 end

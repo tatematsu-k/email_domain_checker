@@ -32,4 +32,8 @@ if defined?(::ActiveModel::EachValidator)
       end
     end
   end
+
+  unless ::ActiveModel::Validations.const_defined?(:NormalizeValidator)
+    ::ActiveModel::Validations.const_set(:NormalizeValidator, EmailDomainChecker::Validators::NormalizeValidator)
+  end
 end

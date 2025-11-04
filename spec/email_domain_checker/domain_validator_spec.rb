@@ -19,6 +19,10 @@ RSpec.describe EmailDomainChecker::DomainValidator do
   end
 
   describe "#valid?" do
+    before do
+      EmailDomainChecker::Config.reset
+    end
+
     it "returns false for nil domain" do
       validator = described_class.new
       expect(validator.valid?(nil)).to be false
@@ -37,6 +41,22 @@ RSpec.describe EmailDomainChecker::DomainValidator do
     it "checks MX records when enabled" do
       validator = described_class.new(check_mx: true)
       # Note: This test may fail if DNS lookup fails
+      result = validator.valid?("gmail.com")
+      expect(result).to be(true).or(be(false))
+    end
+
+    it "skips DNS checks when test_mode is enabled" do
+      EmailDomainChecker::Config.test_mode = true
+      validator = described_class.new(check_mx: true)
+      # Should return true without making DNS requests
+      expect(validator.valid?("example.com")).to be true
+      expect(validator.valid?("nonexistent-domain-12345.com")).to be true
+    end
+
+    it "performs DNS checks when test_mode is disabled" do
+      EmailDomainChecker::Config.test_mode = false
+      validator = described_class.new(check_mx: true)
+      # This will make an actual DNS request
       result = validator.valid?("gmail.com")
       expect(result).to be(true).or(be(false))
     end

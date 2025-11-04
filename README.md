@@ -39,6 +39,11 @@ EmailDomainChecker.normalize("User@Example.COM") # => "user@example.com"
 
 # Configure default options globally
 EmailDomainChecker.configure(timeout: 10, check_mx: true)
+
+# Enable test mode (skips DNS checks)
+EmailDomainChecker.configure do |config|
+  config.test_mode = true
+end
 ```
 
 ### Using Checker class
@@ -125,6 +130,25 @@ end
 - `check_mx`: Check MX records for domain (default: true)
 - `check_a`: Check A records for domain (default: false)
 - `timeout`: DNS lookup timeout in seconds (default: 5)
+- `test_mode`: Skip DNS checks (useful for testing with dummy data) (default: false)
+
+### Test Mode
+
+When writing tests, you may want to skip DNS checks to avoid external requests. Enable test mode to skip all DNS validations (MX and A record checks):
+
+```ruby
+# In spec_helper.rb or test_helper.rb
+EmailDomainChecker.configure do |config|
+  config.test_mode = true
+end
+
+# Or in a before block
+before do
+  EmailDomainChecker::Config.test_mode = true
+end
+```
+
+When test mode is enabled, domain validation will always return `true` without making any DNS requests, allowing you to use dummy email addresses in your tests without external dependencies.
 
 ## Development
 

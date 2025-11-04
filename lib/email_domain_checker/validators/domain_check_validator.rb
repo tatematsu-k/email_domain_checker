@@ -1,37 +1,48 @@
 # frozen_string_literal: true
 
-require "active_model"
+begin
+  require "active_model"
+rescue LoadError
+  # ActiveModel is optional – skip defining the validator when it's not available.
+end
 
 module EmailDomainChecker
   module Validators
-    class DomainCheckValidator < ::ActiveModel::EachValidator
-      DEFAULT_MESSAGE = "has an invalid email domain".freeze
-      CHECKER_OPTION_KEYS = %i[validate_format validate_domain check_mx check_a timeout].freeze
+  end
+end
 
-      def validate_each(record, attribute, value)
-        return if skip_validation?(value)
+if defined?(::ActiveModel::EachValidator)
+  module EmailDomainChecker
+    module Validators
+      class DomainCheckValidator < ::ActiveModel::EachValidator
+        DEFAULT_MESSAGE = "has an invalid email domain".freeze
+        CHECKER_OPTION_KEYS = %i[validate_format validate_domain check_mx check_a timeout].freeze
 
-        normalized_value = EmailDomainChecker.normalize(value)
-        return if EmailDomainChecker.valid?(normalized_value, checker_options)
+        def validate_each(record, attribute, value)
+          return if skip_validation?(value)
 
-        record.errors.add(attribute, options[:message] || DEFAULT_MESSAGE)
-      end
+          normalized_value = EmailDomainChecker.normalize(value)
+          return if EmailDomainChecker.valid?(normalized_value, checker_options)
 
-      private
+          record.errors.add(attribute, options[:message] || DEFAULT_MESSAGE)
+        end
 
-      def skip_validation?(value)
-        (options[:allow_nil] && value.nil?) ||
-          (options[:allow_blank] && blank?(value))
-      end
+        private
 
-      def blank?(value)
-        value.nil? || value.respond_to?(:empty?) && value.empty? ||
-          value.respond_to?(:strip) && value.strip.empty?
-      end
+        def skip_validation?(value)
+          (options[:allow_nil] && value.nil?) ||
+            (options[:allow_blank] && blank?(value))
+        end
 
-      def checker_options
-        CHECKER_OPTION_KEYS.each_with_object({}) do |key, hash|
-          hash[key] = options[key] if options.key?(key)
+        def blank?(value)
+          value.nil? || value.respond_to?(:empty?) && value.empty? ||
+            value.respond_to?(:strip) && value.strip.empty?
+        end
+
+        def checker_options
+          CHECKER_OPTION_KEYS.each_with_object({}) do |key, hash|
+            hash[key] = options[key] if options.key?(key)
+          end
         end
       end
     end

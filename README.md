@@ -77,6 +77,11 @@ checker.redacted_email # => "{hash}@example.com"
 
 You can plug the provided validators into any model that uses ActiveModel validations:
 
+> **Note**
+> The ActiveModel integration is optional. The validators are defined automatically
+> when `ActiveModel` is available; if you're not using Rails or ActiveModel, the
+> rest of the library continues to work without pulling the dependency in.
+
 ```ruby
 class User < ApplicationRecord
   validates :email,

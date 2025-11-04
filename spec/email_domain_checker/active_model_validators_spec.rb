@@ -23,6 +23,36 @@ RSpec.describe "ActiveModel validators" do
       expect(instance.valid?).to be(true)
       expect(instance.email).to eq("user@example.com")
     end
+
+    it "skips normalization when the value is nil and allow_nil is set" do
+      model = Class.new do
+        include ::ActiveModel::Model
+
+        attr_accessor :email
+
+        validates :email, normalize: { allow_nil: true }
+      end
+
+      instance = model.new(email: nil)
+
+      expect(instance.valid?).to be(true)
+      expect(instance.email).to be_nil
+    end
+
+    it "skips normalization when the value is blank and allow_blank is set" do
+      model = Class.new do
+        include ::ActiveModel::Model
+
+        attr_accessor :email
+
+        validates :email, normalize: { allow_blank: true }
+      end
+
+      instance = model.new(email: "   ")
+
+      expect(instance.valid?).to be(true)
+      expect(instance.email).to eq("   ")
+    end
   end
 
   describe EmailDomainChecker::Validators::DomainCheckValidator do

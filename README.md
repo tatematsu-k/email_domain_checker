@@ -20,6 +20,29 @@ Or install it yourself as:
 
 ## Usage
 
+### Module-level convenience methods
+
+```ruby
+require 'email_domain_checker'
+
+# Quick validation
+EmailDomainChecker.valid?("user@example.com", validate_domain: false) # => true
+
+# Format validation only
+EmailDomainChecker.format_valid?("user@example.com") # => true
+
+# Domain validation only
+EmailDomainChecker.domain_valid?("user@example.com", check_mx: true) # => true/false
+
+# Normalize email
+EmailDomainChecker.normalize("User@Example.COM") # => "user@example.com"
+
+# Configure default options globally
+EmailDomainChecker.configure(timeout: 10, check_mx: true)
+```
+
+### Using Checker class
+
 ```ruby
 require 'email_domain_checker'
 
@@ -44,7 +67,19 @@ checker.normalized_email # => "user@example.com"
 # Get canonical email
 checker = EmailDomainChecker::Checker.new("user.name+tag@gmail.com")
 checker.canonical_email # => "username@gmail.com"
+
+# Get redacted email (for privacy)
+checker = EmailDomainChecker::Checker.new("user@example.com")
+checker.redacted_email # => "{hash}@example.com"
 ```
+
+### Configuration Options
+
+- `validate_format`: Validate email format using email_address gem (default: true)
+- `validate_domain`: Validate domain existence (default: true)
+- `check_mx`: Check MX records for domain (default: true)
+- `check_a`: Check A records for domain (default: false)
+- `timeout`: DNS lookup timeout in seconds (default: 5)
 
 ## Development
 

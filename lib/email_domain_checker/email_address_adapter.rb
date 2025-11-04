@@ -11,7 +11,7 @@ module EmailDomainChecker
     end
 
     def valid?
-      EmailAddress.valid?(email_address.to_s)
+      email_address.valid?
     end
 
     def normalized

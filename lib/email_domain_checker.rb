@@ -43,7 +43,7 @@ module EmailDomainChecker
   end
 
   # Configure default options
-  def self.configure(options = {})
-    Config.configure(options)
+  def self.configure(options = {}, &block)
+    Config.configure(options, &block)
   end
 end

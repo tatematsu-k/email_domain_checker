@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "dns_resolver"
+require_relative "config"
 
 module EmailDomainChecker
   class DomainValidator
@@ -17,6 +18,9 @@ module EmailDomainChecker
 
     def valid?(domain)
       return false if domain.nil? || domain.empty?
+
+      # Skip DNS checks if test mode is enabled
+      return true if Config.test_mode?
 
       check_domain_records(domain)
     end

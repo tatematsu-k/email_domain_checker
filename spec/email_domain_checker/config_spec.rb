@@ -15,6 +15,20 @@ RSpec.describe EmailDomainChecker::Config do
       expect(described_class.default_options[:timeout]).to eq(10)
       expect(described_class.default_options[:validate_format]).to be true
     end
+
+    it "allows setting test_mode via block" do
+      described_class.configure do |config|
+        config.test_mode = true
+      end
+      expect(described_class.test_mode?).to be true
+    end
+
+    it "allows setting test_mode via direct assignment" do
+      described_class.test_mode = true
+      expect(described_class.test_mode?).to be true
+      described_class.test_mode = false
+      expect(described_class.test_mode?).to be false
+    end
   end
 
   describe ".reset" do
@@ -22,6 +36,24 @@ RSpec.describe EmailDomainChecker::Config do
       described_class.configure(timeout: 20)
       described_class.reset
       expect(described_class.default_options[:timeout]).to eq(5)
+    end
+
+    it "resets test_mode to false" do
+      described_class.test_mode = true
+      described_class.reset
+      expect(described_class.test_mode?).to be false
+    end
+  end
+
+  describe ".test_mode?" do
+    it "returns false by default" do
+      described_class.reset
+      expect(described_class.test_mode?).to be false
+    end
+
+    it "returns true when test_mode is set to true" do
+      described_class.test_mode = true
+      expect(described_class.test_mode?).to be true
     end
   end
 end

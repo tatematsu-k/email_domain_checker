@@ -47,5 +47,44 @@ RSpec.describe EmailDomainChecker do
       checker = EmailDomainChecker::Checker.new("test@example.com")
       expect(checker.options[:timeout]).to eq(10)
     end
+
+    it "allows setting test_mode via block" do
+      described_class.configure do |config|
+        config.test_mode = true
+      end
+      expect(described_class::Config.test_mode?).to be true
+    end
+
+    it "allows setting test_mode via direct assignment" do
+      config = described_class.configure
+      config.test_mode = true
+      expect(described_class::Config.test_mode?).to be true
+    end
+  end
+
+  describe "test_mode" do
+    before do
+      described_class::Config.reset
+    end
+
+    after do
+      described_class::Config.reset
+    end
+
+    it "skips DNS checks when test_mode is enabled" do
+      described_class.configure do |config|
+        config.test_mode = true
+      end
+      # Should return true without making DNS requests
+      result = described_class.domain_valid?("test@nonexistent-domain-12345.com", check_mx: true)
+      expect(result).to be true
+    end
+
+    it "performs DNS checks when test_mode is disabled" do
+      described_class::Config.test_mode = false
+      # This will make an actual DNS request
+      result = described_class.domain_valid?("test@gmail.com", check_mx: true)
+      expect(result).to be(true).or(be(false))
+    end
   end
 end

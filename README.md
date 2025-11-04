@@ -73,6 +73,22 @@ checker = EmailDomainChecker::Checker.new("user@example.com")
 checker.redacted_email # => "{hash}@example.com"
 ```
 
+### ActiveModel / ActiveRecord integration
+
+You can plug the provided validators into any model that uses ActiveModel validations:
+
+```ruby
+class User < ApplicationRecord
+  validates :email,
+            normalize: true,
+            domain_check: { check_mx: true, timeout: 3 }
+end
+```
+
+The `normalize` validator replaces the attribute value with the normalized email address
+before the record is validated, and the `domain_check` validator delegates to
+`EmailDomainChecker.valid?` while honouring the options you provide.
+
 ### Configuration Options
 
 - `validate_format`: Validate email format using email_address gem (default: true)

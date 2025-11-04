@@ -7,6 +7,8 @@ require_relative "email_domain_checker/dns_resolver"
 require_relative "email_domain_checker/domain_validator"
 require_relative "email_domain_checker/email_address_adapter"
 require_relative "email_domain_checker/checker"
+require_relative "email_domain_checker/validators/domain_check_validator"
+require_relative "email_domain_checker/validators/normalize_validator"
 
 module EmailDomainChecker
   class Error < StandardError; end

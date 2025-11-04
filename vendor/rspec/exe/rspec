@@ -1,0 +1,18 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+$LOAD_PATH.unshift(File.expand_path("../lib", __dir__))
+require "rspec"
+
+root = File.expand_path("../../..", __dir__)
+$LOAD_PATH.unshift(File.join(root, "spec"))
+
+spec_helper = File.join(root, "spec", "spec_helper.rb")
+require spec_helper if File.exist?(spec_helper)
+
+dir = File.join(root, "spec")
+Dir[File.join(dir, "**", "*_spec.rb")].sort.each do |file|
+  require file
+end
+
+exit(RSpec.run ? 0 : 1)

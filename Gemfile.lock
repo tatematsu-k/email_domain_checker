@@ -1,0 +1,24 @@
+PATH
+  remote: .
+  specs:
+    email_domain_checker (0.1.0)
+
+PATH
+  remote: vendor/rspec
+  specs:
+    rspec (3.0.0)
+
+GEM
+  remote: https://rubygems.org/
+  specs:
+
+PLATFORMS
+  ruby
+  x86_64-linux
+
+DEPENDENCIES
+  email_domain_checker!
+  rspec!
+
+BUNDLED WITH
+   2.6.7

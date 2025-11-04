@@ -45,4 +45,3 @@ RSpec.describe EmailDomainChecker::DnsResolver do
     end
   end
 end
-

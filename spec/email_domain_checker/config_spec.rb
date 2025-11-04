@@ -25,4 +25,3 @@ RSpec.describe EmailDomainChecker::Config do
     end
   end
 end
-

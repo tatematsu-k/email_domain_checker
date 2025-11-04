@@ -25,4 +25,3 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `EmailDomainChecker.domain_valid?` for domain-only checks
 - `EmailDomainChecker.normalize` for email normalization
 - `EmailDomainChecker.configure` for global configuration
-

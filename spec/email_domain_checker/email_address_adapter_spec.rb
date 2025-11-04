@@ -49,4 +49,3 @@ RSpec.describe EmailDomainChecker::EmailAddressAdapter do
     end
   end
 end
-

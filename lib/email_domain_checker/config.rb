@@ -25,4 +25,3 @@ module EmailDomainChecker
     reset
   end
 end
-

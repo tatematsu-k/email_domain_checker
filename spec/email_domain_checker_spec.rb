@@ -49,4 +49,3 @@ RSpec.describe EmailDomainChecker do
     end
   end
 end
-

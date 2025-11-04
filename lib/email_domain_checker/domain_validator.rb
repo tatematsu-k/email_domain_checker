@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
-require "resolv"
+require_relative "dns_resolver"
 
 module EmailDomainChecker
   class DomainValidator
-    attr_reader :options
+    attr_reader :options, :dns_resolver
 
     def initialize(options = {})
       @options = {
@@ -12,6 +12,7 @@ module EmailDomainChecker
         check_a: false,
         timeout: 5
       }.merge(options)
+      @dns_resolver = DnsResolver.new(timeout: @options[:timeout])
     end
 
     def valid?(domain)
@@ -24,39 +25,14 @@ module EmailDomainChecker
 
     def check_domain_records(domain)
       if options[:check_mx]
-        return false unless has_mx_record?(domain)
+        return false unless dns_resolver.has_mx_record?(domain)
       end
 
       if options[:check_a]
-        return false unless has_a_record?(domain)
+        return false unless dns_resolver.has_a_record?(domain)
       end
 
       true
     end
-
-    def has_mx_record?(domain)
-      resolver = Resolv::DNS.new
-      resolver.timeouts = [options[:timeout]]
-
-      begin
-        mx_records = resolver.getresources(domain, Resolv::DNS::Resource::IN::MX)
-        !mx_records.empty?
-      rescue Resolv::ResolvError, Resolv::ResolvTimeout
-        false
-      end
-    end
-
-    def has_a_record?(domain)
-      resolver = Resolv::DNS.new
-      resolver.timeouts = [options[:timeout]]
-
-      begin
-        a_records = resolver.getresources(domain, Resolv::DNS::Resource::IN::A)
-        !a_records.empty?
-      rescue Resolv::ResolvError, Resolv::ResolvTimeout
-        false
-      end
-    end
   end
 end
-

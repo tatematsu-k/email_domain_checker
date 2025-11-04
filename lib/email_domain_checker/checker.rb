@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-require "email_address"
 require_relative "normalizer"
 require_relative "domain_validator"
+require_relative "email_address_adapter"
 
 module EmailDomainChecker
   class Checker
@@ -10,13 +10,7 @@ module EmailDomainChecker
 
     def initialize(email, options = {})
       @email = Normalizer.normalize(email)
-      @options = {
-        validate_format: true,
-        validate_domain: true,
-        check_mx: true,
-        check_a: false,
-        timeout: 5
-      }.merge(options)
+      @options = Config.default_options.merge(options)
       @domain_validator = DomainValidator.new(
         check_mx: @options[:check_mx],
         check_a: @options[:check_a],
@@ -33,7 +27,7 @@ module EmailDomainChecker
     def format_valid?
       return true unless options[:validate_format]
 
-      EmailAddress.valid?(email)
+      email_adapter.valid?
     end
 
     def domain_valid?
@@ -46,25 +40,26 @@ module EmailDomainChecker
     def normalized_email
       return nil unless format_valid?
 
-      email_address = EmailAddress.new(email)
-      email_address.normal
+      email_adapter.normalized
     end
 
     def canonical_email
       return nil unless format_valid?
 
-      email_address = EmailAddress.new(email)
-      email_address.canonical
+      email_adapter.canonical
     end
 
     def redacted_email
       return nil unless format_valid?
 
-      email_address = EmailAddress.new(email)
-      email_address.redact
+      email_adapter.redacted
     end
 
     private
+
+    def email_adapter
+      @email_adapter ||= EmailAddressAdapter.new(email)
+    end
 
     def extract_domain
       parts = email.split("@", 2)
@@ -75,4 +70,3 @@ module EmailDomainChecker
     end
   end
 end
-

@@ -42,4 +42,3 @@ RSpec.describe EmailDomainChecker::DomainValidator do
     end
   end
 end
-

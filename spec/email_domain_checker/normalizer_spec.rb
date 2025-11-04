@@ -42,4 +42,3 @@ RSpec.describe EmailDomainChecker::Normalizer do
     end
   end
 end
-

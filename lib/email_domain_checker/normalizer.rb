@@ -35,4 +35,3 @@ module EmailDomainChecker
     end
   end
 end
-

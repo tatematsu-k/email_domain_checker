@@ -10,7 +10,7 @@ Gem::Specification.new do |spec|
 
   spec.summary       = "Email address validation and domain checking library"
   spec.description   = "A library to validate email addresses and check domain validity to prevent mail server reputation degradation"
-  spec.homepage      = "https://github.com/yourusername/email_domain_checker"
+  spec.homepage      = "https://github.com/tatematsu-k/email_domain_checker"
   spec.license       = "MIT"
   spec.required_ruby_version = ">= 3.0"
 

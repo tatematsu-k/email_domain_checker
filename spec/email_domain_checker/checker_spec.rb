@@ -110,4 +110,3 @@ RSpec.describe EmailDomainChecker::Checker do
     end
   end
 end
-

@@ -8,6 +8,17 @@ require_relative "email_domain_checker/domain_validator"
 require_relative "email_domain_checker/email_address_adapter"
 require_relative "email_domain_checker/checker"
 
+# Conditionally load ActiveModel integration if ActiveModel is available
+begin
+  # Require logger gem for older Rails/ActiveModel versions on Ruby 3.4+
+  # This is needed because logger was removed from Ruby standard library in 3.4+
+  require "logger" if RUBY_VERSION >= "3.4"
+  require "active_model"
+  require_relative "email_domain_checker/active_model_validator"
+rescue LoadError
+  # ActiveModel is not available, skip integration
+end
+
 module EmailDomainChecker
   class Error < StandardError; end
 

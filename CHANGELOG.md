@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.1.2] - 2025-01-XX
 
 ### Added
-- Test mode feature to skip DNS checks during testing with block syntax support for configuration
+- Test mode feature to skip DNS checks during testing with block syntax support for configuration ([#4](https://github.com/tatematsu-k/email_domain_checker/pull/4))
 
 ## [0.1.1] - 2025-11-04
 

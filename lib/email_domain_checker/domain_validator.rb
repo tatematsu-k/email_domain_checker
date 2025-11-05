@@ -13,7 +13,8 @@ module EmailDomainChecker
         check_a: false,
         timeout: 5
       }.merge(options)
-      @dns_resolver = DnsResolver.new(timeout: @options[:timeout])
+      cache = Config.cache_enabled? ? Config.cache_adapter : nil
+      @dns_resolver = DnsResolver.new(timeout: @options[:timeout], cache: cache)
     end
 
     def valid?(domain)

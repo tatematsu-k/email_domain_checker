@@ -2,6 +2,7 @@
 
 require_relative "email_domain_checker/version"
 require_relative "email_domain_checker/config"
+require_relative "email_domain_checker/cache"
 require_relative "email_domain_checker/normalizer"
 require_relative "email_domain_checker/dns_resolver"
 require_relative "email_domain_checker/domain_validator"
@@ -45,5 +46,36 @@ module EmailDomainChecker
   # Configure default options
   def self.configure(options = {}, &block)
     Config.configure(options, &block)
+  end
+
+  # Clear all cached DNS validation results
+  def self.clear_cache
+    Config.clear_cache
+  end
+
+  # Clear cached DNS validation results for a specific domain
+  def self.clear_cache_for_domain(domain)
+    Config.clear_cache_for_domain(domain)
+  end
+
+  # Get cache adapter instance (returns nil if cache is disabled)
+  # @return [Cache::BaseAdapter, nil] Cache adapter instance
+  def self.cache
+    Config.cache_adapter
+  end
+
+  # Convenience method for cache.with (Rails-style)
+  # Only works if cache is enabled
+  # @param key [String] cache key
+  # @param ttl [Integer, nil] time to live in seconds
+  # @param force [Boolean] force cache refresh
+  # @yield Block to execute on cache miss
+  # @return [Object] cached value or block result
+  # @raise [ArgumentError] if cache is disabled or block is not given
+  def self.with_cache(key, ttl: nil, force: false, &block)
+    adapter = cache
+    raise ArgumentError, "Cache is not enabled. Please enable cache in configuration." unless adapter
+
+    adapter.with(key, ttl: ttl, force: force, &block)
   end
 end

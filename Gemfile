@@ -27,4 +27,3 @@ if ENV["ACTIVEMODEL_VERSION"] || ENV["RAILS_VERSION"]
     gem "activemodel", "~> #{activemodel_version}.0"
   end
 end
-

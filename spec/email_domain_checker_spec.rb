@@ -87,4 +87,88 @@ RSpec.describe EmailDomainChecker do
       expect(result).to be(true).or(be(false))
     end
   end
+
+  describe "cache functionality" do
+    before do
+      described_class::Config.reset
+    end
+
+    after do
+      described_class::Config.reset
+    end
+
+    describe ".clear_cache" do
+      it "clears all cached DNS validation results" do
+        described_class::Config.cache_enabled = true
+        cache = described_class::Config.cache_adapter
+        cache.set("mx:example.com", true)
+        cache.set("a:example.com", false)
+
+        described_class.clear_cache
+
+        expect(cache.get("mx:example.com")).to be_nil
+        expect(cache.get("a:example.com")).to be_nil
+      end
+
+      it "does nothing when cache is disabled" do
+        expect { described_class.clear_cache }.not_to raise_error
+      end
+    end
+
+    describe ".clear_cache_for_domain" do
+      it "clears cache for a specific domain" do
+        described_class::Config.cache_enabled = true
+        cache = described_class::Config.cache_adapter
+        cache.set("mx:example.com", true)
+        cache.set("a:example.com", false)
+        cache.set("mx:other.com", true)
+
+        described_class.clear_cache_for_domain("example.com")
+
+        expect(cache.get("mx:example.com")).to be_nil
+        expect(cache.get("a:example.com")).to be_nil
+        expect(cache.get("mx:other.com")).to eq(true)
+      end
+
+      it "does nothing when cache is disabled" do
+        expect { described_class.clear_cache_for_domain("example.com") }.not_to raise_error
+      end
+    end
+
+    describe "cache configuration" do
+      it "cache is enabled by default" do
+        expect(described_class::Config.cache_enabled?).to be true
+      end
+
+      it "allows changing cache settings via configure block" do
+        described_class.configure do |config|
+          config.cache_ttl = 1800
+        end
+
+        expect(described_class::Config.cache_ttl).to eq(1800)
+      end
+
+      it "allows disabling cache" do
+        described_class.configure do |config|
+          config.cache_enabled = false
+        end
+
+        expect(described_class::Config.cache_enabled?).to be false
+      end
+
+      it "uses cache when enabled" do
+        cache = described_class::Config.cache_adapter
+
+        # Pre-populate cache
+        cache.set("mx:example.com", true, ttl: 3600)
+
+        # Should use cache
+        allow_any_instance_of(EmailDomainChecker::DnsResolver).to receive(:check_dns_record).and_return(false)
+        result = described_class.domain_valid?("test@example.com", check_mx: true)
+
+        # Result should come from cache (true), not from DNS (false)
+        expect(result).to be true
+      end
+    end
+  end
 end

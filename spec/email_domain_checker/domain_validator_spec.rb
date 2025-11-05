@@ -60,5 +60,37 @@ RSpec.describe EmailDomainChecker::DomainValidator do
       result = validator.valid?("gmail.com")
       expect(result).to be(true).or(be(false))
     end
+
+    it "uses cache by default" do
+      EmailDomainChecker::Config.reset
+      validator = described_class.new(check_mx: true)
+
+      domain = "gmail.com" # Use a real domain
+      cache = EmailDomainChecker::Config.cache_adapter
+
+      # First call should hit DNS and cache the result
+      result1 = validator.valid?(domain)
+
+      # Verify cache entry exists
+      expect(cache.get("mx:#{domain}")).to eq(result1)
+
+      # Second call should use cache
+      result2 = validator.valid?(domain)
+
+      expect(result1).to eq(result2)
+      expect(cache.get("mx:#{domain}")).to eq(result1)
+    end
+
+    it "does not use cache when cache is disabled" do
+      EmailDomainChecker::Config.reset
+      EmailDomainChecker::Config.cache_enabled = false
+      validator = described_class.new(check_mx: true)
+
+      domain = "example.com"
+
+      # Should not have cache
+      expect(EmailDomainChecker::Config.cache_adapter).to be_nil
+      expect(validator.valid?(domain)).to be(false).or(be(true))
+    end
   end
 end

@@ -61,3 +61,6 @@ Thumbs.db
 
 vendor/
 Gemfile.lock
+
+# Ignore MkDocs build output
+/site/

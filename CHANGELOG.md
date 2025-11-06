@@ -7,8 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.3] - 2025-11-06
+
 ### Added
 - DNS validation result caching functionality with memory and Redis adapters, custom adapter support, and Rails-style `cache.with` method ([#7](https://github.com/tatematsu-k/email_domain_checker/pull/7))
+
+### Documentation
+- Added comprehensive documentation site with MkDocs including installation guide, usage examples, configuration options, and ActiveModel integration documentation
 
 ## [0.1.2] - 2025-11-05
 

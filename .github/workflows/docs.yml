@@ -19,71 +19,83 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - name: Checkout repository
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-python@v5
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
           python-version: '3.x'
 
-      - run: pip install -r requirements.txt
+      - name: Install dependencies
+        run: pip install -r requirements.txt
 
-      - name: Build docs
-        id: build
+      - name: Determine build type and version
+        id: build_info
         run: |
           if [[ "${{ github.ref_type }}" == "tag" ]]; then
             VERSION=${GITHUB_REF#refs/tags/v}
             echo "version=$VERSION" >> $GITHUB_OUTPUT
             echo "is_tag=true" >> $GITHUB_OUTPUT
-            git checkout $GITHUB_REF
+            echo "target_dir=v${VERSION}" >> $GITHUB_OUTPUT
+            echo "commit_message=Deploy docs v${VERSION}" >> $GITHUB_OUTPUT
           else
             echo "version=latest" >> $GITHUB_OUTPUT
             echo "is_tag=false" >> $GITHUB_OUTPUT
+            echo "target_dir=latest" >> $GITHUB_OUTPUT
+            echo "commit_message=Update latest docs" >> $GITHUB_OUTPUT
           fi
+
+      - name: Checkout target ref
+        if: steps.build_info.outputs.is_tag == 'true'
+        run: git checkout ${{ github.ref }}
+
+      - name: Build documentation
+        run: |
           mkdocs build
           mkdir -p ../site-versioned
-          if [[ "${{ steps.build.outputs.is_tag }}" == "true" ]]; then
-            mv site "../site-versioned/v${{ steps.build.outputs.version }}"
-          else
-            mv site "../site-versioned/latest"
-          fi
+          mv site "../site-versioned/${{ steps.build_info.outputs.target_dir }}"
 
-
-      - name: Deploy to gh-pages
+      - name: Checkout gh-pages branch
         run: |
           git fetch origin gh-pages:gh-pages || true
           git checkout gh-pages || git checkout --orphan gh-pages
 
-          # Get template files from main branch
-          git fetch origin main:refs/remotes/origin/main 2>/dev/null || \
-          git fetch origin master:refs/remotes/origin/master || true
-          git checkout origin/main -- docs-templates .github/scripts 2>/dev/null || \
-          git checkout origin/master -- docs-templates .github/scripts 2>/dev/null || true
+      - name: Fetch template files from main branch
+        run: |
+          MAIN_BRANCH="main"
+          git fetch origin ${MAIN_BRANCH}:refs/remotes/origin/${MAIN_BRANCH} 2>/dev/null || {
+            MAIN_BRANCH="master"
+            git fetch origin ${MAIN_BRANCH}:refs/remotes/origin/${MAIN_BRANCH} || true
+          }
+          git checkout origin/${MAIN_BRANCH} -- docs-templates .github/scripts 2>/dev/null || true
 
-          # Update versioned docs
-          if [[ "${{ steps.build.outputs.is_tag }}" == "true" ]]; then
-            # Tag push: deploy versioned docs
-            VERSION="${{ steps.build.outputs.version }}"
-            rm -rf "v${VERSION}"
-            cp -r ../site-versioned/v${VERSION} .
+      - name: Deploy documentation
+        run: |
+          TARGET_DIR="${{ steps.build_info.outputs.target_dir }}"
+          SOURCE_DIR="../site-versioned/${TARGET_DIR}"
+
+          if [[ "${{ steps.build_info.outputs.is_tag }}" == "true" ]]; then
+            # Deploy versioned docs (vx.y.z)
+            rm -rf "${TARGET_DIR}"
+            cp -r "${SOURCE_DIR}" "${TARGET_DIR}"
+            echo "Deployed versioned docs: ${TARGET_DIR}"
           else
-            # Branch push: update latest with main branch content
+            # Deploy latest (main branch content)
             rm -rf latest
-            cp -r ../site-versioned/latest .
+            cp -r "${SOURCE_DIR}" latest
             echo "Updated latest with main branch content"
           fi
 
-          # Generate index
-          .github/scripts/generate-index.sh
+      - name: Generate index page
+        run: .github/scripts/generate-index.sh
 
-          # Commit
+      - name: Commit and push
+        run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add .
-          if [[ "${{ steps.build.outputs.is_tag }}" == "true" ]]; then
-            git commit -m "Deploy docs v${{ steps.build.outputs.version }}" || exit 0
-          else
-            git commit -m "Update latest docs" || exit 0
-          fi
+          git commit -m "${{ steps.build_info.outputs.commit_message }}" || exit 0
           git push origin gh-pages || exit 0

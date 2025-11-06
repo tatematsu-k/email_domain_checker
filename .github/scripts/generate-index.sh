@@ -1,15 +1,43 @@
 #!/bin/bash
 set -euo pipefail
 
-# Generate version list
-VERSION_LIST=""
-[[ -d "latest" ]] && VERSION_LIST+='                      <li><a href="latest/"><span class="version-label">Latest</span><span class="latest-badge">Current</span></a></li>'$'\n'
+# Configuration
+TEMPLATE_FILE="${TEMPLATE_FILE:-docs-templates/index.html}"
+OUTPUT_FILE="${OUTPUT_FILE:-index.html}"
 
-for dir in $(ls -d v*/ 2>/dev/null | sort -Vr); do
-    [[ -d "$dir" ]] && VERSION_LIST+="                      <li><a href=\"$(basename "$dir")/\">$(basename "$dir")</a></li>"$'\n'
-done
+# Functions
+generate_version_list() {
+    local version_list=""
+
+    # Add latest if it exists
+    if [[ -d "latest" ]]; then
+        version_list+='                      <li><a href="latest/"><span class="version-label">Latest</span><span class="latest-badge">Current</span></a></li>'$'\n'
+    fi
+
+    # Add all version directories (sorted by version, newest first)
+    while IFS= read -r dir; do
+        if [[ -d "$dir" ]]; then
+            version=$(basename "$dir")
+            version_list+="                      <li><a href=\"${version}/\">${version}</a></li>"$'\n'
+        fi
+    done < <(ls -d v*/ 2>/dev/null | sort -Vr || true)
+
+    echo -n "$version_list"
+}
+
+# Validation
+if [[ ! -f "$TEMPLATE_FILE" ]]; then
+    echo "Error: Template file not found: $TEMPLATE_FILE" >&2
+    exit 1
+fi
+
+# Generate version list
+VERSION_LIST=$(generate_version_list)
 
 # Replace placeholder in template
-sed "s|{{VERSION_LIST}}|$VERSION_LIST|" docs-templates/index.html > index.html
+if ! sed "s|{{VERSION_LIST}}|$VERSION_LIST|" "$TEMPLATE_FILE" > "$OUTPUT_FILE"; then
+    echo "Error: Failed to generate index.html" >&2
+    exit 1
+fi
 
-echo "Generated index.html"
+echo "Generated index.html successfully"

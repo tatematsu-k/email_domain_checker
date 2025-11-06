@@ -35,7 +35,7 @@ EmailDomainChecker.normalize("User@Example.COM") # => "user@example.com"
 
 ## Documentation
 
-📖 **[Full Documentation](https://tatematsu-k.github.io/email_domain_checker/)** - Complete usage guide, API reference, and examples
+📖 **[Full Documentation](https://tatematsu-k.github.io/email_domain_checker/latest/)** - Complete usage guide, API reference, and examples
 
 ## Features
 

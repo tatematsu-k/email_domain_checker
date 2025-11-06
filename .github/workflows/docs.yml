@@ -1,0 +1,102 @@
+name: Deploy Documentation
+
+on:
+  push:
+    branches: [main, master]
+    tags: ['v*']
+    paths:
+      - 'docs/**'
+      - 'mkdocs.yml'
+      - '.github/workflows/docs.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - run: pip install -r requirements.txt
+
+      - name: Build docs
+        id: build
+        run: |
+          if [[ "${{ github.ref_type }}" == "tag" ]]; then
+            VERSION=${GITHUB_REF#refs/tags/v}
+            echo "version=$VERSION" >> $GITHUB_OUTPUT
+            echo "is_tag=true" >> $GITHUB_OUTPUT
+            git checkout $GITHUB_REF
+          else
+            echo "version=latest" >> $GITHUB_OUTPUT
+            echo "is_tag=false" >> $GITHUB_OUTPUT
+          fi
+          mkdocs build
+          mkdir -p ../site-versioned
+          if [[ "${{ steps.build.outputs.is_tag }}" == "true" ]]; then
+            mv site "../site-versioned/v${{ steps.build.outputs.version }}"
+          else
+            mv site "../site-versioned/latest"
+          fi
+
+      - name: Get latest version
+        id: latest
+        run: |
+          git fetch origin --tags
+          LATEST=$(git tag -l 'v*' | sort -V | tail -1 | sed 's/^v//')
+          echo "version=$LATEST" >> $GITHUB_OUTPUT
+          echo "Latest version: $LATEST"
+
+      - name: Deploy to gh-pages
+        run: |
+          git fetch origin gh-pages:gh-pages || true
+          git checkout gh-pages || git checkout --orphan gh-pages
+
+          # Get template files from main branch
+          git fetch origin main:refs/remotes/origin/main 2>/dev/null || \
+          git fetch origin master:refs/remotes/origin/master || true
+          git checkout origin/main -- docs-templates .github/scripts 2>/dev/null || \
+          git checkout origin/master -- docs-templates .github/scripts 2>/dev/null || true
+
+          # Update versioned docs
+          LATEST_VERSION="${{ steps.latest.outputs.version }}"
+          if [[ "${{ steps.build.outputs.is_tag }}" == "true" ]]; then
+            VERSION="${{ steps.build.outputs.version }}"
+            rm -rf "v${VERSION}"
+            cp -r ../site-versioned/v${VERSION} .
+          fi
+
+          # Always update latest to the newest tagged version
+          if [[ -n "$LATEST_VERSION" && -d "v${LATEST_VERSION}" ]]; then
+            rm -rf latest
+            cp -r "v${LATEST_VERSION}" latest
+            echo "Updated latest to v${LATEST_VERSION}"
+          elif [[ "${{ steps.build.outputs.is_tag }}" != "true" ]]; then
+            # Fallback: use branch build if no tags exist
+            rm -rf latest
+            cp -r ../site-versioned/latest .
+          fi
+
+          # Generate index
+          .github/scripts/generate-index.sh
+
+          # Commit
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .
+          if [[ "${{ steps.build.outputs.is_tag }}" == "true" ]]; then
+            git commit -m "Deploy docs v${{ steps.build.outputs.version }}" || exit 0
+          else
+            git commit -m "Update latest docs" || exit 0
+          fi
+          git push origin gh-pages || exit 0

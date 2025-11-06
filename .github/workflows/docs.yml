@@ -49,13 +49,6 @@ jobs:
             mv site "../site-versioned/latest"
           fi
 
-      - name: Get latest version
-        id: latest
-        run: |
-          git fetch origin --tags
-          LATEST=$(git tag -l 'v*' | sort -V | tail -1 | sed 's/^v//')
-          echo "version=$LATEST" >> $GITHUB_OUTPUT
-          echo "Latest version: $LATEST"
 
       - name: Deploy to gh-pages
         run: |
@@ -69,22 +62,16 @@ jobs:
           git checkout origin/master -- docs-templates .github/scripts 2>/dev/null || true
 
           # Update versioned docs
-          LATEST_VERSION="${{ steps.latest.outputs.version }}"
           if [[ "${{ steps.build.outputs.is_tag }}" == "true" ]]; then
+            # Tag push: deploy versioned docs
             VERSION="${{ steps.build.outputs.version }}"
             rm -rf "v${VERSION}"
             cp -r ../site-versioned/v${VERSION} .
-          fi
-
-          # Always update latest to the newest tagged version
-          if [[ -n "$LATEST_VERSION" && -d "v${LATEST_VERSION}" ]]; then
-            rm -rf latest
-            cp -r "v${LATEST_VERSION}" latest
-            echo "Updated latest to v${LATEST_VERSION}"
-          elif [[ "${{ steps.build.outputs.is_tag }}" != "true" ]]; then
-            # Fallback: use branch build if no tags exist
+          else
+            # Branch push: update latest with main branch content
             rm -rf latest
             cp -r ../site-versioned/latest .
+            echo "Updated latest with main branch content"
           fi
 
           # Generate index

@@ -11,12 +11,19 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
   pages: write
   id-token: write
 
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
 jobs:
   deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -40,12 +47,10 @@ jobs:
             echo "version=$VERSION" >> $GITHUB_OUTPUT
             echo "is_tag=true" >> $GITHUB_OUTPUT
             echo "target_dir=v${VERSION}" >> $GITHUB_OUTPUT
-            echo "commit_message=Deploy docs v${VERSION}" >> $GITHUB_OUTPUT
           else
             echo "version=latest" >> $GITHUB_OUTPUT
             echo "is_tag=false" >> $GITHUB_OUTPUT
             echo "target_dir=latest" >> $GITHUB_OUTPUT
-            echo "commit_message=Update latest docs" >> $GITHUB_OUTPUT
           fi
 
       - name: Checkout target ref
@@ -58,10 +63,20 @@ jobs:
           mkdir -p ../site-versioned
           mv site "../site-versioned/${{ steps.build_info.outputs.target_dir }}"
 
-      - name: Checkout gh-pages branch
+      - name: Fetch existing gh-pages content
         run: |
           git fetch origin gh-pages:gh-pages || true
-          git checkout gh-pages || git checkout --orphan gh-pages
+          if git show-ref --verify --quiet refs/heads/gh-pages; then
+            git checkout gh-pages
+            # Copy existing versions to artifact directory
+            mkdir -p ../pages-artifact
+            cp -r latest ../pages-artifact/ 2>/dev/null || true
+            cp -r v*/ ../pages-artifact/ 2>/dev/null || true
+            cp index.html ../pages-artifact/ 2>/dev/null || true
+            git checkout -
+          else
+            mkdir -p ../pages-artifact
+          fi
 
       - name: Fetch template files from main branch
         run: |
@@ -72,30 +87,46 @@ jobs:
           }
           git checkout origin/${MAIN_BRANCH} -- docs-templates .github/scripts 2>/dev/null || true
 
-      - name: Deploy documentation
+      - name: Update versioned docs in artifact
         run: |
           TARGET_DIR="${{ steps.build_info.outputs.target_dir }}"
           SOURCE_DIR="../site-versioned/${TARGET_DIR}"
 
           if [[ "${{ steps.build_info.outputs.is_tag }}" == "true" ]]; then
             # Deploy versioned docs (vx.y.z)
-            rm -rf "${TARGET_DIR}"
-            cp -r "${SOURCE_DIR}" "${TARGET_DIR}"
+            rm -rf "../pages-artifact/${TARGET_DIR}"
+            cp -r "${SOURCE_DIR}" "../pages-artifact/${TARGET_DIR}"
             echo "Deployed versioned docs: ${TARGET_DIR}"
           else
             # Deploy latest (main branch content)
-            rm -rf latest
-            cp -r "${SOURCE_DIR}" latest
+            rm -rf ../pages-artifact/latest
+            cp -r "${SOURCE_DIR}" ../pages-artifact/latest
             echo "Updated latest with main branch content"
           fi
 
       - name: Generate index page
-        run: .github/scripts/generate-index.sh
-
-      - name: Commit and push
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add .
-          git commit -m "${{ steps.build_info.outputs.commit_message }}" || exit 0
-          git push origin gh-pages || exit 0
+          cd ../pages-artifact
+          TEMPLATE_FILE="../email_domain_checker/docs-templates/index.html"
+          SCRIPT_FILE="../email_domain_checker/.github/scripts/generate-index.sh"
+          if [[ -f "$TEMPLATE_FILE" && -f "$SCRIPT_FILE" ]]; then
+            cp "$TEMPLATE_FILE" .
+            cp "$SCRIPT_FILE" .github/scripts/
+            chmod +x .github/scripts/generate-index.sh
+            .github/scripts/generate-index.sh
+          else
+            echo "Warning: Template or script not found, creating basic index"
+            cat > index.html << 'EOF'
+          <!DOCTYPE html>
+          <html><head><meta http-equiv="refresh" content="0; url=latest/"></head></html>
+          EOF
+          fi
+
+      - name: Upload pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ../pages-artifact
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

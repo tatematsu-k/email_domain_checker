@@ -112,13 +112,58 @@ jobs:
 
       - name: Generate index page
         run: |
-          cd ../pages-artifact
-          TEMPLATE_FILE="../email_domain_checker/docs-templates/index.html"
-          SCRIPT_FILE="../email_domain_checker/.github/scripts/generate-index.sh"
-          if [[ -f "$TEMPLATE_FILE" && -f "$SCRIPT_FILE" ]]; then
+          # Determine the correct path to pages-artifact
+          # It should be in the parent directory of the workspace
+          WORKSPACE_NAME="${GITHUB_WORKSPACE##*/}"
+          PAGES_ARTIFACT_DIR="../pages-artifact"
+
+          # Ensure we're in the workspace root
+          cd "$GITHUB_WORKSPACE"
+
+          # Check if pages-artifact directory exists, create if not
+          if [[ ! -d "$PAGES_ARTIFACT_DIR" ]]; then
+            echo "Warning: pages-artifact directory not found, creating it"
+            mkdir -p "$PAGES_ARTIFACT_DIR"
+          fi
+
+          cd "$PAGES_ARTIFACT_DIR"
+
+          # Try to find template and script files from multiple locations
+          TEMPLATE_FILE=""
+          SCRIPT_FILE=""
+
+          # First, try from the workspace root
+          if [[ -f "../${WORKSPACE_NAME}/docs-templates/index.html" ]]; then
+            TEMPLATE_FILE="../${WORKSPACE_NAME}/docs-templates/index.html"
+          elif [[ -f "../email_domain_checker/docs-templates/index.html" ]]; then
+            TEMPLATE_FILE="../email_domain_checker/docs-templates/index.html"
+          elif [[ -f "docs-templates/index.html" ]]; then
+            TEMPLATE_FILE="docs-templates/index.html"
+          fi
+
+          if [[ -f "../${WORKSPACE_NAME}/.github/scripts/generate-index.sh" ]]; then
+            SCRIPT_FILE="../${WORKSPACE_NAME}/.github/scripts/generate-index.sh"
+          elif [[ -f "../email_domain_checker/.github/scripts/generate-index.sh" ]]; then
+            SCRIPT_FILE="../email_domain_checker/.github/scripts/generate-index.sh"
+          elif [[ -f ".github/scripts/generate-index.sh" ]]; then
+            SCRIPT_FILE=".github/scripts/generate-index.sh"
+          fi
+
+          echo "Checking for template and script files..."
+          echo "Current directory: $(pwd)"
+          echo "Workspace: $GITHUB_WORKSPACE"
+          echo "Template file: ${TEMPLATE_FILE:-not found}"
+          echo "Script file: ${SCRIPT_FILE:-not found}"
+
+          if [[ -n "$TEMPLATE_FILE" && -n "$SCRIPT_FILE" ]]; then
             mkdir -p docs-templates
             cp "$TEMPLATE_FILE" docs-templates/index.html
-            TEMPLATE_FILE="docs-templates/index.html" OUTPUT_FILE="index.html" bash "$SCRIPT_FILE"
+            echo "Running index generation script..."
+            TEMPLATE_FILE="docs-templates/index.html" OUTPUT_FILE="index.html" bash "$SCRIPT_FILE" || {
+              echo "Error: Script execution failed, creating basic index"
+              echo '<!DOCTYPE html>' > index.html
+              echo '<html><head><meta http-equiv="refresh" content="0; url=latest/"></head></html>' >> index.html
+            }
           else
             echo "Warning: Template or script not found, creating basic index"
             echo '<!DOCTYPE html>' > index.html

@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.4] - 2025-11-06
+
+### Added
+- Domain filtering functionality with blacklist, whitelist, and custom checker support ([#13](https://github.com/tatematsu-k/email_domain_checker/pull/13))
+- Support for regex patterns in blacklist and whitelist configurations ([#13](https://github.com/tatematsu-k/email_domain_checker/pull/13))
+- Whitelist precedence over blacklist when both are configured ([#13](https://github.com/tatematsu-k/email_domain_checker/pull/13))
+- Comprehensive domain filtering documentation ([#13](https://github.com/tatematsu-k/email_domain_checker/pull/13))
+
 ## [0.1.3] - 2025-11-06
 
 ### Added

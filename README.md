@@ -54,6 +54,23 @@ After checking out the repo, run `bin/setup` to install dependencies. Then, run 
 
 To install this gem onto your local machine, run `bundle exec rake install`. To release a new version, update the version number in `version.rb`, and then run `bundle exec rake release`, which will create a git tag for the version, push git commits and the created tag, and push the `.gem` file to [rubygems.org](https://rubygems.org).
 
+### Building Documentation Locally
+
+To build and preview the documentation locally:
+
+```bash
+# Install Python dependencies
+pip install -r requirements.txt
+
+# Start development server (with live reload)
+mkdocs serve
+
+# Build static site
+mkdocs build
+```
+
+The documentation will be available at `http://127.0.0.1:8000` when using `mkdocs serve`. The built files will be in the `site/` directory when using `mkdocs build`.
+
 ## Contributing
 
 Bug reports and pull requests are welcome on GitHub at https://github.com/tatematsu-k/email_domain_checker.

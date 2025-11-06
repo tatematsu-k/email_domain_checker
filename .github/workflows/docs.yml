@@ -8,6 +8,12 @@ on:
       - 'docs/**'
       - 'mkdocs.yml'
       - '.github/workflows/docs.yml'
+  pull_request:
+    branches: [main, master]
+    paths:
+      - 'docs/**'
+      - 'mkdocs.yml'
+      - '.github/workflows/docs.yml'
   workflow_dispatch:
 
 permissions:
@@ -20,10 +26,7 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+  build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -64,11 +67,11 @@ jobs:
           mv site "../site-versioned/${{ steps.build_info.outputs.target_dir }}"
 
       - name: Fetch existing gh-pages content
+        if: github.event_name != 'pull_request'
         run: |
           git fetch origin gh-pages:gh-pages || true
           if git show-ref --verify --quiet refs/heads/gh-pages; then
             git checkout gh-pages
-            # Copy existing versions to artifact directory
             mkdir -p ../pages-artifact
             cp -r latest ../pages-artifact/ 2>/dev/null || true
             cp -r v*/ ../pages-artifact/ 2>/dev/null || true
@@ -77,6 +80,11 @@ jobs:
           else
             mkdir -p ../pages-artifact
           fi
+
+      - name: Initialize artifact directory for PR
+        if: github.event_name == 'pull_request'
+        run: |
+          mkdir -p ../pages-artifact
 
       - name: Fetch template files from main branch
         run: |
@@ -93,12 +101,10 @@ jobs:
           SOURCE_DIR="../site-versioned/${TARGET_DIR}"
 
           if [[ "${{ steps.build_info.outputs.is_tag }}" == "true" ]]; then
-            # Deploy versioned docs (vx.y.z)
             rm -rf "../pages-artifact/${TARGET_DIR}"
             cp -r "${SOURCE_DIR}" "../pages-artifact/${TARGET_DIR}"
             echo "Deployed versioned docs: ${TARGET_DIR}"
           else
-            # Deploy latest (main branch content)
             rm -rf ../pages-artifact/latest
             cp -r "${SOURCE_DIR}" ../pages-artifact/latest
             echo "Updated latest with main branch content"
@@ -110,17 +116,13 @@ jobs:
           TEMPLATE_FILE="../email_domain_checker/docs-templates/index.html"
           SCRIPT_FILE="../email_domain_checker/.github/scripts/generate-index.sh"
           if [[ -f "$TEMPLATE_FILE" && -f "$SCRIPT_FILE" ]]; then
-            # Copy template to docs-templates directory for script
             mkdir -p docs-templates
             cp "$TEMPLATE_FILE" docs-templates/index.html
-            # Run script with correct paths
             TEMPLATE_FILE="docs-templates/index.html" OUTPUT_FILE="index.html" bash "$SCRIPT_FILE"
           else
             echo "Warning: Template or script not found, creating basic index"
-            cat > index.html << 'EOF'
-<!DOCTYPE html>
-<html><head><meta http-equiv="refresh" content="0; url=latest/"></head></html>
-EOF
+            echo '<!DOCTYPE html>' > index.html
+            echo '<html><head><meta http-equiv="refresh" content="0; url=latest/"></head></html>' >> index.html
           fi
 
       - name: Upload pages artifact
@@ -128,6 +130,14 @@ EOF
         with:
           path: ../pages-artifact
 
+  deploy:
+    if: github.event_name != 'pull_request'
+    needs: build
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4

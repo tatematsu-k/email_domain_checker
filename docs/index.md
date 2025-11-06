@@ -9,6 +9,8 @@ Email address validation and domain checking library to prevent mail server repu
 - ✅ MX record checking
 - ✅ A record checking
 - ✅ Email normalization
+- ✅ Domain blacklist/whitelist
+- ✅ Custom domain checker
 - ✅ ActiveModel/ActiveRecord integration
 - ✅ DNS result caching (memory and Redis)
 - ✅ Test mode for development

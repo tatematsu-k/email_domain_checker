@@ -26,6 +26,20 @@ When test mode is enabled, domain validation will always return `true` without m
 - `cache_ttl`: Cache time-to-live in seconds (default: `3600`)
 - `redis_client`: Custom Redis client instance (only used when `cache_type` is `:redis`)
 
+### Domain Filtering Options
+
+- `blacklist_domains`: Array of domains to reject (supports strings and regex patterns) (default: `[]`)
+- `whitelist_domains`: Array of domains to allow (supports strings and regex patterns) (default: `[]`)
+- `domain_checker`: Custom domain validation function (Proc/lambda) (default: `nil`)
+
+When `whitelist_domains` is configured, only domains matching the whitelist will be allowed (whitelist takes precedence over blacklist).
+
+The validation order is:
+1. Whitelist check (if configured)
+2. Blacklist check
+3. Custom checker
+4. DNS validation
+
 ## Configuration Examples
 
 ### Basic Configuration
@@ -60,6 +74,42 @@ EmailDomainChecker.configure do |config|
   config.cache_enabled = true
   config.cache_type = :memory
   config.cache_ttl = 3600
+end
+```
+
+### Blacklist Configuration
+
+```ruby
+EmailDomainChecker.configure do |config|
+  config.blacklist_domains = [
+    "10minutemail.com",
+    "tempmail.com",
+    /.*\.spam\.com$/ # Regex patterns are supported
+  ]
+end
+```
+
+### Whitelist Configuration
+
+```ruby
+EmailDomainChecker.configure do |config|
+  config.whitelist_domains = [
+    "example.com",
+    "company.com",
+    /.*\.company\.com$/ # Regex patterns are supported
+  ]
+end
+```
+
+### Custom Domain Checker
+
+```ruby
+EmailDomainChecker.configure do |config|
+  config.domain_checker = lambda do |domain|
+    # Custom validation logic
+    # Return true to allow, false to reject
+    DisposableEmailService.valid?(domain)
+  end
 end
 ```
 

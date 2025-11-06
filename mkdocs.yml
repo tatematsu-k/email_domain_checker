@@ -57,6 +57,7 @@ nav:
     - ActiveModel Integration: usage/activemodel-integration.md
   - Configuration:
     - Configuration Options: configuration/options.md
+    - Domain Filtering: configuration/domain-filtering.md
     - Test Mode: configuration/test-mode.md
     - Cache Configuration: configuration/cache.md
   - Contributing: contributing.md

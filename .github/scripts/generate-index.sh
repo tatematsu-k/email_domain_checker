@@ -35,8 +35,18 @@ fi
 VERSION_LIST=$(generate_version_list)
 
 # Replace placeholder in template
-if ! sed "s|{{VERSION_LIST}}|$VERSION_LIST|" "$TEMPLATE_FILE" > "$OUTPUT_FILE"; then
-    echo "Error: Failed to generate index.html" >&2
+# Use a temporary file to avoid issues with special characters
+TEMP_FILE=$(mktemp)
+trap "rm -f $TEMP_FILE" EXIT
+
+if ! sed "s|{{VERSION_LIST}}|$VERSION_LIST|" "$TEMPLATE_FILE" > "$TEMP_FILE"; then
+    echo "Error: Failed to process template" >&2
+    exit 1
+fi
+
+# Move temp file to output
+if ! mv "$TEMP_FILE" "$OUTPUT_FILE"; then
+    echo "Error: Failed to write output file" >&2
     exit 1
 fi
 

@@ -110,16 +110,17 @@ jobs:
           TEMPLATE_FILE="../email_domain_checker/docs-templates/index.html"
           SCRIPT_FILE="../email_domain_checker/.github/scripts/generate-index.sh"
           if [[ -f "$TEMPLATE_FILE" && -f "$SCRIPT_FILE" ]]; then
-            cp "$TEMPLATE_FILE" .
-            cp "$SCRIPT_FILE" .github/scripts/
-            chmod +x .github/scripts/generate-index.sh
-            .github/scripts/generate-index.sh
+            # Copy template to docs-templates directory for script
+            mkdir -p docs-templates
+            cp "$TEMPLATE_FILE" docs-templates/index.html
+            # Run script with correct paths
+            TEMPLATE_FILE="docs-templates/index.html" OUTPUT_FILE="index.html" bash "$SCRIPT_FILE"
           else
             echo "Warning: Template or script not found, creating basic index"
             cat > index.html << 'EOF'
-          <!DOCTYPE html>
-          <html><head><meta http-equiv="refresh" content="0; url=latest/"></head></html>
-          EOF
+<!DOCTYPE html>
+<html><head><meta http-equiv="refresh" content="0; url=latest/"></head></html>
+EOF
           fi
 
       - name: Upload pages artifact

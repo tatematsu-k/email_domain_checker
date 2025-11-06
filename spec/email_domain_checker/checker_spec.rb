@@ -109,4 +109,37 @@ RSpec.describe EmailDomainChecker::Checker do
       expect(checker.valid?).to be false
     end
   end
+
+  describe "integration with blacklist and whitelist" do
+    before do
+      EmailDomainChecker::Config.reset
+    end
+
+    it "rejects emails with blacklisted domains" do
+      EmailDomainChecker::Config.blacklist_domains = ["10minutemail.com"]
+      checker = described_class.new("user@10minutemail.com", validate_domain: true, check_mx: false)
+      expect(checker.valid?).to be false
+    end
+
+    it "allows emails with whitelisted domains" do
+      EmailDomainChecker::Config.whitelist_domains = ["example.com"]
+      checker = described_class.new("user@example.com", validate_domain: true, check_mx: false)
+      expect(checker.valid?).to be true
+    end
+
+    it "rejects emails with domains not in whitelist" do
+      EmailDomainChecker::Config.whitelist_domains = ["example.com"]
+      checker = described_class.new("user@other.com", validate_domain: true, check_mx: false)
+      expect(checker.valid?).to be false
+    end
+
+    it "works with custom domain checker" do
+      EmailDomainChecker::Config.domain_checker = lambda { |domain| domain == "allowed.com" }
+      checker = described_class.new("user@allowed.com", validate_domain: true, check_mx: false)
+      expect(checker.valid?).to be true
+
+      checker2 = described_class.new("user@blocked.com", validate_domain: true, check_mx: false)
+      expect(checker2.valid?).to be false
+    end
+  end
 end

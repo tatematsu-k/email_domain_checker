@@ -13,7 +13,7 @@ module EmailDomainChecker
     }.freeze
 
     class << self
-      attr_accessor :default_options, :test_mode, :cache_enabled, :cache_type, :cache_ttl, :cache_adapter, :cache_adapter_instance, :redis_client
+      attr_accessor :default_options, :test_mode, :cache_enabled, :cache_type, :cache_ttl, :cache_adapter, :cache_adapter_instance, :redis_client, :blacklist_domains, :whitelist_domains, :domain_checker
 
       def configure(options = {}, &block)
         if block_given?
@@ -36,6 +36,9 @@ module EmailDomainChecker
         @cache_adapter = nil
         @cache_adapter_instance = nil
         @redis_client = nil
+        @blacklist_domains = []
+        @whitelist_domains = []
+        @domain_checker = nil
       end
 
       def test_mode=(value)
@@ -116,7 +119,7 @@ module EmailDomainChecker
       end
     end
 
-    attr_accessor :test_mode, :cache_enabled, :cache_type, :cache_ttl, :cache_adapter_instance, :redis_client
+    attr_accessor :test_mode, :cache_enabled, :cache_type, :cache_ttl, :cache_adapter_instance, :redis_client, :blacklist_domains, :whitelist_domains, :domain_checker
 
     def initialize
       @test_mode = self.class.test_mode || false
@@ -125,6 +128,9 @@ module EmailDomainChecker
       @cache_ttl = self.class.cache_ttl || 3600
       @cache_adapter_instance = self.class.cache_adapter_instance
       @redis_client = self.class.redis_client
+      @blacklist_domains = self.class.blacklist_domains || []
+      @whitelist_domains = self.class.whitelist_domains || []
+      @domain_checker = self.class.domain_checker
     end
 
     def test_mode=(value)
@@ -162,6 +168,21 @@ module EmailDomainChecker
       self.class.redis_client = value
       # Reset cache adapter when changing redis client
       self.class.reset_cache_adapter_if_redis
+    end
+
+    def blacklist_domains=(value)
+      @blacklist_domains = value || []
+      self.class.blacklist_domains = value || []
+    end
+
+    def whitelist_domains=(value)
+      @whitelist_domains = value || []
+      self.class.whitelist_domains = value || []
+    end
+
+    def domain_checker=(value)
+      @domain_checker = value
+      self.class.domain_checker = value
     end
 
     reset

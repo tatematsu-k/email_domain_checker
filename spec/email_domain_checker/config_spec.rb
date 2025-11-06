@@ -175,4 +175,84 @@ RSpec.describe EmailDomainChecker::Config do
       end
     end
   end
+
+  describe "blacklist and whitelist configuration" do
+    before do
+      described_class.reset
+    end
+
+    describe ".blacklist_domains" do
+      it "defaults to empty array" do
+        expect(described_class.blacklist_domains).to eq([])
+      end
+
+      it "can be set via class method" do
+        described_class.blacklist_domains = ["spam.com", "blocked.com"]
+        expect(described_class.blacklist_domains).to eq(["spam.com", "blocked.com"])
+      end
+
+      it "can be set via configure block" do
+        described_class.configure do |config|
+          config.blacklist_domains = ["10minutemail.com", /.*\.spam\.com$/]
+        end
+        expect(described_class.blacklist_domains).to eq(["10minutemail.com", /.*\.spam\.com$/])
+      end
+
+      it "resets to empty array" do
+        described_class.blacklist_domains = ["spam.com"]
+        described_class.reset
+        expect(described_class.blacklist_domains).to eq([])
+      end
+    end
+
+    describe ".whitelist_domains" do
+      it "defaults to empty array" do
+        expect(described_class.whitelist_domains).to eq([])
+      end
+
+      it "can be set via class method" do
+        described_class.whitelist_domains = ["example.com", "company.com"]
+        expect(described_class.whitelist_domains).to eq(["example.com", "company.com"])
+      end
+
+      it "can be set via configure block" do
+        described_class.configure do |config|
+          config.whitelist_domains = ["example.com", /.*\.company\.com$/]
+        end
+        expect(described_class.whitelist_domains).to eq(["example.com", /.*\.company\.com$/])
+      end
+
+      it "resets to empty array" do
+        described_class.whitelist_domains = ["example.com"]
+        described_class.reset
+        expect(described_class.whitelist_domains).to eq([])
+      end
+    end
+
+    describe ".domain_checker" do
+      it "defaults to nil" do
+        expect(described_class.domain_checker).to be_nil
+      end
+
+      it "can be set via class method" do
+        checker = lambda { |domain| domain == "allowed.com" }
+        described_class.domain_checker = checker
+        expect(described_class.domain_checker).to eq(checker)
+      end
+
+      it "can be set via configure block" do
+        checker = lambda { |domain| domain.length > 5 }
+        described_class.configure do |config|
+          config.domain_checker = checker
+        end
+        expect(described_class.domain_checker).to eq(checker)
+      end
+
+      it "resets to nil" do
+        described_class.domain_checker = lambda { |_domain| true }
+        described_class.reset
+        expect(described_class.domain_checker).to be_nil
+      end
+    end
+  end
 end

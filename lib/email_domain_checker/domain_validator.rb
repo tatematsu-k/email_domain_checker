@@ -20,6 +20,20 @@ module EmailDomainChecker
     def valid?(domain)
       return false if domain.nil? || domain.empty?
 
+      # Check whitelist first (if configured)
+      unless Config.whitelist_domains.nil? || Config.whitelist_domains.empty?
+        return whitelisted?(domain)
+      end
+
+      # Check blacklist
+      return false if blacklisted?(domain)
+
+      # Check custom domain checker
+      if Config.domain_checker
+        custom_result = Config.domain_checker.call(domain)
+        return false unless custom_result
+      end
+
       # Skip DNS checks if test mode is enabled
       return true if Config.test_mode?
 
@@ -27,6 +41,33 @@ module EmailDomainChecker
     end
 
     private
+
+    def whitelisted?(domain)
+      return false if Config.whitelist_domains.nil? || Config.whitelist_domains.empty?
+
+      Config.whitelist_domains.any? do |pattern|
+        matches_pattern?(domain, pattern)
+      end
+    end
+
+    def blacklisted?(domain)
+      return false if Config.blacklist_domains.nil? || Config.blacklist_domains.empty?
+
+      Config.blacklist_domains.any? do |pattern|
+        matches_pattern?(domain, pattern)
+      end
+    end
+
+    def matches_pattern?(domain, pattern)
+      case pattern
+      when Regexp
+        pattern.match?(domain)
+      when String
+        pattern == domain
+      else
+        false
+      end
+    end
 
     def check_domain_records(domain)
       if options[:check_mx]

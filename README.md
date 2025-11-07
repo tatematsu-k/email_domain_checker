@@ -47,6 +47,7 @@ EmailDomainChecker.normalize("User@Example.COM") # => "user@example.com"
 - ✅ ActiveModel/ActiveRecord integration
 - ✅ DNS result caching (memory and Redis)
 - ✅ Test mode for development
+- ✅ Role-based email address detection
 
 ## Development
 

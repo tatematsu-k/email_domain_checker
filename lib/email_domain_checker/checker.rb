@@ -21,6 +21,8 @@ module EmailDomainChecker
     def valid?
       return false if email.empty?
 
+      return false if role_address_rejected?
+
       format_valid? && domain_valid?
     end
 
@@ -67,6 +69,28 @@ module EmailDomainChecker
 
       domain = parts[1].to_s.strip
       domain.empty? ? nil : domain
+    end
+
+    def extract_local_part
+      parts = email.split("@", 2)
+      return nil if parts.length != 2
+
+      local_part = parts[0].to_s.strip.downcase
+      local_part.empty? ? nil : local_part
+    end
+
+    def role_address_rejected?
+      return false unless Config.reject_role_addresses
+
+      local_part = extract_local_part
+      return false if local_part.nil?
+
+      role_addresses = Config.role_addresses || []
+      return false if role_addresses.empty?
+
+      role_addresses.any? do |role_address|
+        local_part == role_address.downcase || local_part.start_with?("#{role_address.downcase}+") || local_part.start_with?("#{role_address.downcase}.")
+      end
     end
   end
 end

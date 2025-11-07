@@ -142,4 +142,63 @@ RSpec.describe EmailDomainChecker::Checker do
       expect(checker2.valid?).to be false
     end
   end
+
+  describe "role-based address detection" do
+    before do
+      EmailDomainChecker::Config.reset
+    end
+
+    context "when reject_role_addresses is disabled (default)" do
+      it "allows role-based addresses" do
+        EmailDomainChecker::Config.reject_role_addresses = false
+        checker = described_class.new("noreply@example.com", validate_domain: false)
+        expect(checker.valid?).to be true
+      end
+    end
+
+    context "when reject_role_addresses is enabled" do
+      before do
+        EmailDomainChecker::Config.reject_role_addresses = true
+      end
+
+      it "rejects default role addresses" do
+        %w[noreply no-reply admin administrator support help info contact sales marketing postmaster abuse].each do |role|
+          checker = described_class.new("#{role}@example.com", validate_domain: false)
+          expect(checker.valid?).to be false
+        end
+      end
+
+      it "rejects role addresses with plus sign" do
+        checker = described_class.new("noreply+tag@example.com", validate_domain: false)
+        expect(checker.valid?).to be false
+      end
+
+      it "rejects role addresses with dot" do
+        checker = described_class.new("noreply.tag@example.com", validate_domain: false)
+        expect(checker.valid?).to be false
+      end
+
+      it "allows non-role addresses" do
+        checker = described_class.new("user@example.com", validate_domain: false)
+        expect(checker.valid?).to be true
+      end
+
+      it "allows custom role addresses when configured" do
+        EmailDomainChecker::Config.role_addresses = ["custom-role"]
+        checker = described_class.new("custom-role@example.com", validate_domain: false)
+        expect(checker.valid?).to be false
+
+        checker2 = described_class.new("noreply@example.com", validate_domain: false)
+        expect(checker2.valid?).to be true
+      end
+
+      it "is case-insensitive" do
+        checker = described_class.new("NoReply@example.com", validate_domain: false)
+        expect(checker.valid?).to be false
+
+        checker2 = described_class.new("ADMIN@example.com", validate_domain: false)
+        expect(checker2.valid?).to be false
+      end
+    end
+  end
 end

@@ -12,8 +12,17 @@ module EmailDomainChecker
       timeout: 5
     }.freeze
 
+    DEFAULT_ROLE_ADDRESSES = %w[
+      noreply no-reply
+      admin administrator
+      support help
+      info contact
+      sales marketing
+      postmaster abuse
+    ].freeze
+
     class << self
-      attr_accessor :default_options, :test_mode, :cache_enabled, :cache_type, :cache_ttl, :cache_adapter, :cache_adapter_instance, :redis_client, :blacklist_domains, :whitelist_domains, :domain_checker
+      attr_accessor :default_options, :test_mode, :cache_enabled, :cache_type, :cache_ttl, :cache_adapter, :cache_adapter_instance, :redis_client, :blacklist_domains, :whitelist_domains, :domain_checker, :reject_role_addresses, :role_addresses
 
       def configure(options = {}, &block)
         if block_given?
@@ -39,6 +48,8 @@ module EmailDomainChecker
         @blacklist_domains = []
         @whitelist_domains = []
         @domain_checker = nil
+        @reject_role_addresses = false
+        @role_addresses = DEFAULT_ROLE_ADDRESSES.dup
       end
 
       def test_mode=(value)
@@ -119,7 +130,7 @@ module EmailDomainChecker
       end
     end
 
-    attr_accessor :test_mode, :cache_enabled, :cache_type, :cache_ttl, :cache_adapter_instance, :redis_client, :blacklist_domains, :whitelist_domains, :domain_checker
+    attr_accessor :test_mode, :cache_enabled, :cache_type, :cache_ttl, :cache_adapter_instance, :redis_client, :blacklist_domains, :whitelist_domains, :domain_checker, :reject_role_addresses, :role_addresses
 
     def initialize
       @test_mode = self.class.test_mode || false
@@ -131,6 +142,8 @@ module EmailDomainChecker
       @blacklist_domains = self.class.blacklist_domains || []
       @whitelist_domains = self.class.whitelist_domains || []
       @domain_checker = self.class.domain_checker
+      @reject_role_addresses = self.class.reject_role_addresses.nil? ? false : self.class.reject_role_addresses
+      @role_addresses = self.class.role_addresses || DEFAULT_ROLE_ADDRESSES.dup
     end
 
     def test_mode=(value)
@@ -183,6 +196,16 @@ module EmailDomainChecker
     def domain_checker=(value)
       @domain_checker = value
       self.class.domain_checker = value
+    end
+
+    def reject_role_addresses=(value)
+      @reject_role_addresses = value
+      self.class.reject_role_addresses = value
+    end
+
+    def role_addresses=(value)
+      @role_addresses = value || DEFAULT_ROLE_ADDRESSES.dup
+      self.class.role_addresses = value || DEFAULT_ROLE_ADDRESSES.dup
     end
 
     reset

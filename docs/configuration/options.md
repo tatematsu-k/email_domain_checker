@@ -40,6 +40,13 @@ The validation order is:
 3. Custom checker
 4. DNS validation
 
+### Role Address Detection Options
+
+- `reject_role_addresses`: Enable/disable rejection of role-based email addresses (default: `false`)
+- `role_addresses`: Array of role addresses to detect (default: `["noreply", "no-reply", "admin", "administrator", "support", "help", "info", "contact", "sales", "marketing", "postmaster", "abuse"]`)
+
+Role address detection is performed before format and domain validation. Detection is case-insensitive and supports plus sign (`+`) and dot (`.`) separators.
+
 ## Configuration Examples
 
 ### Basic Configuration
@@ -110,6 +117,15 @@ EmailDomainChecker.configure do |config|
     # Return true to allow, false to reject
     DisposableEmailService.valid?(domain)
   end
+end
+```
+
+### Role Address Detection Configuration
+
+```ruby
+EmailDomainChecker.configure do |config|
+  config.reject_role_addresses = true
+  config.role_addresses = ["noreply", "admin", "support"]
 end
 ```
 

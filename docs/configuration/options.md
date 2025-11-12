@@ -47,6 +47,25 @@ The validation order is:
 
 Role address detection is performed before format and domain validation. Detection is case-insensitive and supports plus sign (`+`) and dot (`.`) separators.
 
+### DNSBL Reputation Checking Options
+
+- `check_reputation_lists`: Enable/disable DNSBL reputation checking (default: `false`)
+- `reputation_lists`: Array of DNSBL service hostnames (default: `[]`)
+- `reputation_timeout`: Timeout for DNSBL queries in seconds (default: `5`)
+- `reputation_fallback_action`: Action when DNSBL lookup fails (`:allow` or `:reject`, default: `:allow`)
+- `reputation_api_keys`: Hash of API keys for DNSBL services (default: `{}`)
+
+DNSBL (DNS-based Blackhole List) checking validates domains against external reputation databases such as Spamhaus, SpamCop, and SORBS. When enabled, domains listed in any configured DNSBL service will be rejected.
+
+The validation order is:
+1. Whitelist check (if configured)
+2. Blacklist check
+3. Custom checker
+4. DNSBL reputation check (if enabled)
+5. DNS validation (MX/A records)
+
+See [DNSBL Reputation Checking](./dnsbl-reputation-checking.md) for detailed documentation.
+
 ## Configuration Examples
 
 ### Basic Configuration
@@ -126,6 +145,34 @@ end
 EmailDomainChecker.configure do |config|
   config.reject_role_addresses = true
   config.role_addresses = ["noreply", "admin", "support"]
+end
+```
+
+### DNSBL Reputation Checking Configuration
+
+```ruby
+EmailDomainChecker.configure do |config|
+  config.check_reputation_lists = true
+  config.reputation_lists = ["zen.spamhaus.org"]
+  config.reputation_timeout = 5
+  config.reputation_fallback_action = :allow
+  # API key for Spamhaus (if required)
+  config.reputation_api_keys = {
+    "zen.spamhaus.org" => ENV["SPAMHAUS_DQS_KEY"]
+  }
+end
+```
+
+For multiple DNSBL services:
+
+```ruby
+EmailDomainChecker.configure do |config|
+  config.check_reputation_lists = true
+  config.reputation_lists = [
+    "zen.spamhaus.org",
+    "bl.spamcop.net",
+    "dnsbl.sorbs.net"
+  ]
 end
 ```
 

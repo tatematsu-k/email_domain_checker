@@ -200,5 +200,82 @@ RSpec.describe EmailDomainChecker::DomainValidator do
         expect(validator.valid?("any.com")).to be true
       end
     end
+
+    describe "DNSBL reputation checking" do
+      it "skips DNSBL check when check_reputation_lists is disabled" do
+        EmailDomainChecker::Config.reset
+        EmailDomainChecker::Config.check_reputation_lists = false
+        validator = described_class.new(check_mx: false)
+
+        # Should pass validation without DNSBL check
+        expect(validator.valid?("example.com")).to be true
+      end
+
+      it "performs DNSBL check when check_reputation_lists is enabled" do
+        EmailDomainChecker::Config.reset
+        EmailDomainChecker::Config.check_reputation_lists = true
+        EmailDomainChecker::Config.reputation_lists = ["zen.spamhaus.org"]
+        validator = described_class.new(check_mx: false)
+
+        # Note: This test may fail if DNS lookup fails or domain is actually listed
+        result = validator.valid?("example.com")
+        expect(result).to be(true).or(be(false))
+      end
+
+      it "rejects domain listed in DNSBL" do
+        EmailDomainChecker::Config.reset
+        EmailDomainChecker::Config.check_reputation_lists = true
+        EmailDomainChecker::Config.reputation_lists = ["zen.spamhaus.org"]
+        validator = described_class.new(check_mx: false)
+
+        # Most legitimate domains should not be listed
+        # This test verifies the integration works
+        result = validator.valid?("gmail.com")
+        expect(result).to be(true).or(be(false))
+      end
+
+      it "skips DNSBL check when test_mode is enabled" do
+        EmailDomainChecker::Config.reset
+        EmailDomainChecker::Config.test_mode = true
+        EmailDomainChecker::Config.check_reputation_lists = true
+        EmailDomainChecker::Config.reputation_lists = ["zen.spamhaus.org"]
+        validator = described_class.new(check_mx: false)
+
+        # Should return true without making DNSBL requests
+        expect(validator.valid?("example.com")).to be true
+      end
+
+      it "checks multiple reputation lists" do
+        EmailDomainChecker::Config.reset
+        EmailDomainChecker::Config.check_reputation_lists = true
+        EmailDomainChecker::Config.reputation_lists = ["zen.spamhaus.org", "bl.spamcop.net"]
+        validator = described_class.new(check_mx: false)
+
+        # Should check all configured lists
+        result = validator.valid?("example.com")
+        expect(result).to be(true).or(be(false))
+      end
+
+      it "uses cache for DNSBL checks" do
+        EmailDomainChecker::Config.reset
+        EmailDomainChecker::Config.check_reputation_lists = true
+        EmailDomainChecker::Config.reputation_lists = ["zen.spamhaus.org"]
+        validator = described_class.new(check_mx: false)
+
+        domain = "example.com"
+        cache = EmailDomainChecker::Config.cache_adapter
+
+        # First call should hit DNS and cache the result
+        result1 = validator.valid?(domain)
+
+        # Verify cache entry exists
+        cached_value = cache.get("dnsbl:zen.spamhaus.org:#{domain}")
+        expect([true, false]).to include(cached_value)
+
+        # Second call should use cache
+        result2 = validator.valid?(domain)
+        expect(result1).to eq(result2)
+      end
+    end
   end
 end

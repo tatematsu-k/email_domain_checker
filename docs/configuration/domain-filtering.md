@@ -14,7 +14,8 @@ The validation order is:
 1. Whitelist check (if configured, highest priority)
 2. Blacklist check
 3. Custom checker
-4. DNS validation
+4. DNSBL reputation check (if enabled)
+5. DNS validation (MX/A records)
 
 ## Blacklist
 
@@ -210,4 +211,3 @@ end
 - All checks are case-sensitive for string matches (use regex with `i` flag for case-insensitive matching)
 - Empty arrays are treated as "no filtering" (all domains pass the filter)
 - When whitelist is configured and non-empty, only whitelisted domains can pass
-

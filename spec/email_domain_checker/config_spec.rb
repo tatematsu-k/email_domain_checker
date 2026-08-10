@@ -255,4 +255,126 @@ RSpec.describe EmailDomainChecker::Config do
       end
     end
   end
+
+  describe "DNSBL reputation configuration" do
+    before do
+      described_class.reset
+    end
+
+    describe ".check_reputation_lists" do
+      it "defaults to false" do
+        expect(described_class.check_reputation_lists).to be false
+      end
+
+      it "can be set via class method" do
+        described_class.check_reputation_lists = true
+        expect(described_class.check_reputation_lists).to be true
+      end
+
+      it "can be set via configure block" do
+        described_class.configure do |config|
+          config.check_reputation_lists = true
+        end
+        expect(described_class.check_reputation_lists).to be true
+      end
+
+      it "resets to false" do
+        described_class.check_reputation_lists = true
+        described_class.reset
+        expect(described_class.check_reputation_lists).to be false
+      end
+    end
+
+    describe ".reputation_lists" do
+      it "defaults to empty array" do
+        expect(described_class.reputation_lists).to eq([])
+      end
+
+      it "can be set via class method" do
+        lists = ["zen.spamhaus.org", "bl.spamcop.net"]
+        described_class.reputation_lists = lists
+        expect(described_class.reputation_lists).to eq(lists)
+      end
+
+      it "can be set via configure block" do
+        described_class.configure do |config|
+          config.reputation_lists = ["zen.spamhaus.org"]
+        end
+        expect(described_class.reputation_lists).to eq(["zen.spamhaus.org"])
+      end
+
+      it "resets to empty array" do
+        described_class.reputation_lists = ["zen.spamhaus.org"]
+        described_class.reset
+        expect(described_class.reputation_lists).to eq([])
+      end
+    end
+
+    describe ".reputation_timeout" do
+      it "defaults to 5 seconds" do
+        expect(described_class.reputation_timeout).to eq(5)
+      end
+
+      it "can be set via class method" do
+        described_class.reputation_timeout = 10
+        expect(described_class.reputation_timeout).to eq(10)
+      end
+
+      it "can be set via configure block" do
+        described_class.configure do |config|
+          config.reputation_timeout = 8
+        end
+        expect(described_class.reputation_timeout).to eq(8)
+      end
+
+      it "resets to 5" do
+        described_class.reputation_timeout = 10
+        described_class.reset
+        expect(described_class.reputation_timeout).to eq(5)
+      end
+    end
+
+    describe ".reputation_fallback_action" do
+      it "defaults to :allow" do
+        expect(described_class.reputation_fallback_action).to eq(:allow)
+      end
+
+      it "can be set via class method" do
+        described_class.reputation_fallback_action = :reject
+        expect(described_class.reputation_fallback_action).to eq(:reject)
+      end
+
+      it "can be set via configure block" do
+        described_class.configure do |config|
+          config.reputation_fallback_action = :reject
+        end
+        expect(described_class.reputation_fallback_action).to eq(:reject)
+      end
+
+      it "resets to :allow" do
+        described_class.reputation_fallback_action = :reject
+        described_class.reset
+        expect(described_class.reputation_fallback_action).to eq(:allow)
+      end
+    end
+
+    describe ".clear_cache_for_domain with DNSBL" do
+      it "clears DNSBL cache entries when reputation lists are configured" do
+        described_class.check_reputation_lists = true
+        described_class.reputation_lists = ["zen.spamhaus.org", "bl.spamcop.net"]
+        adapter = described_class.cache_adapter
+        adapter.set("mx:example.com", true)
+        adapter.set("dnsbl:zen.spamhaus.org:example.com", false)
+        adapter.set("dnsbl:bl.spamcop.net:example.com", false)
+        adapter.set("mx:other.com", true)
+
+        described_class.clear_cache_for_domain("example.com")
+
+        expect(adapter.get("mx:example.com")).to be_nil
+        expect(adapter.get("dnsbl:zen.spamhaus.org:example.com")).to be_nil
+        expect(adapter.get("dnsbl:bl.spamcop.net:example.com")).to be_nil
+        expect(adapter.get("mx:other.com")).to eq(true)
+      end
+    end
+  end
 end

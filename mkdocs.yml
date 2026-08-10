@@ -58,6 +58,7 @@ nav:
   - Configuration:
     - Configuration Options: configuration/options.md
     - Domain Filtering: configuration/domain-filtering.md
+    - DNSBL Reputation Checking: configuration/dnsbl-reputation-checking.md
     - Role Address Detection: configuration/role-address-detection.md
     - Test Mode: configuration/test-mode.md
     - Cache Configuration: configuration/cache.md

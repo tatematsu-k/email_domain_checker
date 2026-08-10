@@ -11,6 +11,7 @@ Email address validation and domain checking library to prevent mail server repu
 - ✅ Email normalization
 - ✅ Domain blacklist/whitelist
 - ✅ Custom domain checker
+- ✅ DNSBL reputation checking (Spamhaus, SpamCop, SORBS, etc.)
 - ✅ ActiveModel/ActiveRecord integration
 - ✅ DNS result caching (memory and Redis)
 - ✅ Test mode for development

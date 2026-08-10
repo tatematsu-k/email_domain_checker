@@ -22,7 +22,7 @@ module EmailDomainChecker
     ].freeze
 
     class << self
-      attr_accessor :default_options, :test_mode, :cache_enabled, :cache_type, :cache_ttl, :cache_adapter, :cache_adapter_instance, :redis_client, :blacklist_domains, :whitelist_domains, :domain_checker, :reject_role_addresses, :role_addresses
+      attr_accessor :default_options, :test_mode, :cache_enabled, :cache_type, :cache_ttl, :cache_adapter, :cache_adapter_instance, :redis_client, :blacklist_domains, :whitelist_domains, :domain_checker, :reject_role_addresses, :role_addresses, :check_reputation_lists, :reputation_lists, :reputation_timeout, :reputation_fallback_action, :reputation_api_keys
 
       def configure(options = {}, &block)
         if block_given?
@@ -50,6 +50,11 @@ module EmailDomainChecker
         @domain_checker = nil
         @reject_role_addresses = false
         @role_addresses = DEFAULT_ROLE_ADDRESSES.dup
+        @check_reputation_lists = false
+        @reputation_lists = []
+        @reputation_timeout = 5
+        @reputation_fallback_action = :allow
+        @reputation_api_keys = {}
       end
 
       def test_mode=(value)
@@ -126,11 +131,18 @@ module EmailDomainChecker
       private
 
       def dns_cache_keys_for_domain(domain)
-        ["mx:#{domain}", "a:#{domain}"]
+        keys = ["mx:#{domain}", "a:#{domain}"]
+        # Add DNSBL cache keys if reputation lists are configured
+        if check_reputation_lists && reputation_lists.is_a?(Array)
+          reputation_lists.each do |dnsbl_host|
+            keys << "dnsbl:#{dnsbl_host}:#{domain}"
+          end
+        end
+        keys
       end
     end
 
-    attr_accessor :test_mode, :cache_enabled, :cache_type, :cache_ttl, :cache_adapter_instance, :redis_client, :blacklist_domains, :whitelist_domains, :domain_checker, :reject_role_addresses, :role_addresses
+    attr_accessor :test_mode, :cache_enabled, :cache_type, :cache_ttl, :cache_adapter_instance, :redis_client, :blacklist_domains, :whitelist_domains, :domain_checker, :reject_role_addresses, :role_addresses, :check_reputation_lists, :reputation_lists, :reputation_timeout, :reputation_fallback_action, :reputation_api_keys
 
     def initialize
       @test_mode = self.class.test_mode || false
@@ -144,6 +156,11 @@ module EmailDomainChecker
       @domain_checker = self.class.domain_checker
       @reject_role_addresses = self.class.reject_role_addresses.nil? ? false : self.class.reject_role_addresses
       @role_addresses = self.class.role_addresses || DEFAULT_ROLE_ADDRESSES.dup
+      @check_reputation_lists = self.class.check_reputation_lists.nil? ? false : self.class.check_reputation_lists
+      @reputation_lists = self.class.reputation_lists || []
+      @reputation_timeout = self.class.reputation_timeout || 5
+      @reputation_fallback_action = self.class.reputation_fallback_action || :allow
+      @reputation_api_keys = self.class.reputation_api_keys || {}
     end
 
     def test_mode=(value)
@@ -206,6 +223,31 @@ module EmailDomainChecker
     def role_addresses=(value)
       @role_addresses = value || DEFAULT_ROLE_ADDRESSES.dup
       self.class.role_addresses = value || DEFAULT_ROLE_ADDRESSES.dup
+    end
+
+    def check_reputation_lists=(value)
+      @check_reputation_lists = value
+      self.class.check_reputation_lists = value
+    end
+
+    def reputation_lists=(value)
+      @reputation_lists = value || []
+      self.class.reputation_lists = value || []
+    end
+
+    def reputation_timeout=(value)
+      @reputation_timeout = value || 5
+      self.class.reputation_timeout = value || 5
+    end
+
+    def reputation_fallback_action=(value)
+      @reputation_fallback_action = value || :allow
+      self.class.reputation_fallback_action = value || :allow
+    end
+
+    def reputation_api_keys=(value)
+      @reputation_api_keys = value || {}
+      self.class.reputation_api_keys = value || {}
     end
 
     reset
